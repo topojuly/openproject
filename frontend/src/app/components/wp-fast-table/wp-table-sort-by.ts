@@ -26,34 +26,8 @@
 // See doc/COPYRIGHT.rdoc for more details.
 // ++
 
-import {QueryResource} from 'core-app/modules/hal/resources/query-resource';
-import {QuerySchemaResource} from 'core-app/modules/hal/resources/query-schema-resource';
 import {WorkPackageTableBaseState} from './wp-table-base';
-import {QueryColumn} from '../wp-query/query-column';
 import {QuerySortByResource} from 'core-app/modules/hal/resources/query-sort-by-resource';
-import {cloneHalResourceCollection} from 'core-app/modules/hal/helpers/hal-resource-builder';
 
-export class WorkPackageTableSortBy extends WorkPackageTableBaseState<QuerySortByResource[]> {
-  public current:QuerySortByResource[] = [];
+export type WorkPackageTableSortBy = QuerySortByResource[];
 
-  constructor(query:QueryResource) {
-    super();
-    this.current = cloneHalResourceCollection<QuerySortByResource>(query.sortBy);
-  }
-
-  public addCurrent(sortBy:QuerySortByResource) {
-    this.current.unshift(sortBy);
-
-    this.current = _.uniqBy(this.current,
-                            sortBy => sortBy.column.$href)
-                          .slice(0, 3);
-  }
-
-  public setCurrent(sortBys:QuerySortByResource[]) {
-    this.current = [];
-
-    _.reverse(sortBys);
-
-    _.each(sortBys, sortBy => this.addCurrent(sortBy));
-  }
-}

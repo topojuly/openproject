@@ -26,7 +26,7 @@
 // See doc/COPYRIGHT.rdoc for more details.
 // ++
 
-import {WorkPackageQueryStateService, WorkPackageTableBaseService} from './wp-table-base.service';
+import {WorkPackageQueryStateService} from './wp-table-base.service';
 import {QueryResource} from 'core-app/modules/hal/resources/query-resource';
 import {QueryColumn, queryColumnTypes} from '../../wp-query/query-column';
 import {InputState} from 'reactivestates';

@@ -26,7 +26,7 @@
 // See doc/COPYRIGHT.rdoc for more details.
 // ++
 
-import {WorkPackageQueryStateService, WorkPackageTableBaseService} from './wp-table-base.service';
+import {WorkPackageQueryStateService} from './wp-table-base.service';
 import {Injectable} from '@angular/core';
 import {QueryResource} from 'core-app/modules/hal/resources/query-resource';
 import {QuerySchemaResource} from 'core-app/modules/hal/resources/query-schema-resource';
@@ -36,20 +36,48 @@ import {WorkPackageTableFilters} from '../wp-table-filters';
 import {IsolatedQuerySpace} from "core-app/modules/work_packages/query-space/isolated-query-space";
 import {InputState} from 'reactivestates';
 import {cloneHalResourceCollection} from 'core-app/modules/hal/helpers/hal-resource-builder';
+import {QueryFilterResource} from "core-app/modules/hal/resources/query-filter-resource";
+import {QueryFilterInstanceSchemaResource} from "core-app/modules/hal/resources/query-filter-instance-schema-resource";
+import {States} from "core-components/states.service";
+import {HalResource} from 'core-app/modules/hal/resources/hal-resource';
 
 @Injectable()
-export class WorkPackageTableFiltersService extends WorkPackageTableBaseService<WorkPackageTableFilters> implements WorkPackageQueryStateService {
+export class WorkPackageTableFiltersService extends WorkPackageQueryStateService<QueryFilterInstanceResource[]> {
 
-  constructor(readonly querySpace:IsolatedQuerySpace) {
+  constructor(protected readonly states:States,
+              protected readonly querySpace:IsolatedQuerySpace) {
     super(querySpace);
   }
 
-  public get state():InputState<WorkPackageTableFilters> {
+  protected get inputState():InputState<QueryFilterInstanceResource[]> {
     return this.querySpace.filters;
   }
 
-  public valueFromQuery(query:QueryResource):WorkPackageTableFilters|undefined {
-    return undefined;
+  public get availableState():InputState<QueryFilterInstanceSchemaResource[]> {
+    return this.states.query.available.filters;
+  }
+
+  protected get availableSchemas():QueryFilterInstanceSchemaResource[] {
+    return this.availableState.getValueOr([]);
+  }
+
+  /**
+   * Add a filter instantiation from the set of available filter schemas
+   *
+   * @param filter
+   */
+  public add(filter:QueryFilterResource) {
+    let schema = _.find(this.availableSchemas, schema => (schema.filter.allowedValues as HalResource)[0].href === filter.href)!;
+    let newFilter = schema.getFilter();
+
+    this.inputState.doModify(filters => filters.concat([newFilter]));
+
+    return newFilter;
+  }
+
+  public remove(filter:QueryFilterInstanceResource) {
+    let index = this.current.indexOf(filter);
+    this.inputState.doModify(filters => filters.splice(index, 1));
   }
 
   public initializeFilters(query:QueryResource, schema:QuerySchemaResource) {
@@ -58,7 +86,7 @@ export class WorkPackageTableFiltersService extends WorkPackageTableBaseService<
     this.loadCurrentFiltersSchemas(filters).then(() => {
       let newState = new WorkPackageTableFilters(filters, schema.filtersSchemas.elements);
 
-      this.state.putValue(newState);
+      this.update(newState);
     });
   }
 
@@ -75,37 +103,50 @@ export class WorkPackageTableFiltersService extends WorkPackageTableBaseService<
     return _.find(this.currentState.current, filter => filter.id === id);
   }
 
+  public valueFromQuery(query:QueryResource) {
+    return undefined;
+  }
+
   public applyToQuery(query:QueryResource) {
     query.filters = this.current;
     return true;
   }
 
-  public get currentState():WorkPackageTableFilters {
-    return this.state.value as WorkPackageTableFilters;
+  public get current():QueryFilterInstanceResource[] {
+    return this.state.getValueOr([]);
   }
 
-  public get current():QueryFilterInstanceResource[]{
-    if (this.currentState) {
-      return cloneHalResourceCollection<QueryFilterInstanceResource>(this.currentState.current);
-    } else {
-      return [];
-    }
-  }
-
-  public replace(newState:WorkPackageTableFilters) {
+  public replace(newState:QueryFilterInstanceResource[]) {
     this.state.putValue(newState);
   }
 
-  public replaceIfComplete(newState:WorkPackageTableFilters) {
-    if (newState.isComplete()) {
+  public replaceIfComplete(newState:QueryFilterInstanceResource[]) {
+    if (this.isComplete(newState)) {
       this.state.putValue(newState);
     }
   }
 
-  public remove(removedFilter:QueryFilterInstanceResource) {
-    this.currentState.remove(removedFilter);
+  public get remainingFilters() {
+    var activeFilterHrefs = this.currentFilters.map(filter => filter.href);
 
-    this.state.putValue(this.currentState);
+    return _.remove(this.availableFilters, filter => activeFilterHrefs.indexOf(filter.href) === -1);
+  }
+
+  public isComplete(filters:QueryFilterInstanceResource[]):boolean {
+    return _.every(filters, filter => filter.isCompletelyDefined());
+  }
+
+  private get currentFilters() {
+    return this.current.map((filter:QueryFilterInstanceResource) => filter.filter);
+  }
+
+  private get availableFilters() {
+    let availableFilters = this.availableSchemas
+                               .map(schema => (schema.filter.allowedValues as QueryFilterResource[])[0]);
+
+    // We do not use the filters id and parent as of now as we do not have adequate
+    // means to select the values.
+    return _.filter(availableFilters, filter => filter.id !== 'id' && filter.id !== 'parent');
   }
 
   private loadCurrentFiltersSchemas(filters:QueryFilterInstanceResource[]):Promise<{}> {

@@ -36,14 +36,20 @@ import {WorkPackageCollectionResource} from 'core-app/modules/hal/resources/wp-c
 
 export abstract class WorkPackageTableBaseService<T> {
 
-  constructor(readonly querySpace:IsolatedQuerySpace) {
+  constructor(protected readonly querySpace:IsolatedQuerySpace) {
   }
 
   /**
-   * Return the state this service cares for from the table state.
-   * @returns {InputState<T>}
+   * Returns a readable public state.
    */
-  public abstract get state():InputState<T>;
+  public get state():State<T> {
+    return this.inputState;
+  }
+
+  /**
+   * Get the writable input state.
+   */
+  protected abstract get inputState():InputState<T>;
 
   /**
    * Get the state value from the current query.
@@ -65,11 +71,11 @@ export abstract class WorkPackageTableBaseService<T> {
   }
 
   public update(value:T) {
-    this.state.putValue(value);
+    this.inputState.putValue(value);
   }
 
-  public clear(reason:string) {
-    this.state.clear(reason);
+  public clear(reason?:string) {
+    this.inputState.clear(reason);
   }
 
   public observeUntil(unsubscribe:Observable<any>) {
@@ -84,21 +90,38 @@ export abstract class WorkPackageTableBaseService<T> {
       )
       .toPromise();
   }
+
+  /**
+   * Helper to set the value of the current state
+   * @param val
+   */
+  protected set current(val:T|undefined) {
+    if (val) {
+      this.update(val);
+    } else {
+      this.clear();
+    }
+  }
+
+  /**
+   * Get the value of the current state, if any.
+   */
+  protected get current():T|undefined {
+    return this.state.value;
+  }
 }
 
-export interface WorkPackageQueryStateService {
+export abstract class WorkPackageQueryStateService<T> extends WorkPackageTableBaseService<T> {
   /**
    * Check whether the state value does not match the query resource's value.
    * @param query The current query resource
    */
-  hasChanged(query:QueryResource):boolean;
+  abstract hasChanged(query:QueryResource):boolean;
 
   /**
    * Apply the current state value to query
    *
    * @return Whether the query should be visibly updated.
    */
-  applyToQuery(query:QueryResource):boolean;
-
-  state:State<any>;
+  abstract applyToQuery(query:QueryResource):boolean;
 }

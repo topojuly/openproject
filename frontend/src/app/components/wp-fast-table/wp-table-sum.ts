@@ -26,21 +26,5 @@
 // See doc/COPYRIGHT.rdoc for more details.
 // ++
 
-import {WorkPackageTableBaseState} from "./wp-table-base";
+export type WorkPackageTableSum = boolean;
 
-export class WorkPackageTableSum extends WorkPackageTableBaseState<boolean> {
-  public current:boolean;
-
-  constructor(isSum:boolean) {
-    super();
-    this.current = isSum;
-  }
-
-  public toggle() {
-    this.current = !this.current;
-  }
-
-  public get isEnabled() {
-    return this.current;
-  }
-}

@@ -27,21 +27,5 @@
 // ++
 
 import {QueryGroupByResource} from 'core-app/modules/hal/resources/query-group-by-resource';
-import {QueryResource} from 'core-app/modules/hal/resources/query-resource';
-import {WorkPackageTableBaseState} from './wp-table-base';
-import {cloneHalResource} from 'core-app/modules/hal/helpers/hal-resource-builder';
 
-export class WorkPackageTableGroupBy extends WorkPackageTableBaseState<QueryGroupByResource | undefined> {
-  public current:QueryGroupByResource | undefined;
-
-  constructor(query:QueryResource) {
-    super();
-    this.current = cloneHalResource<QueryGroupByResource>(query.groupBy);
-  }
-
-  public update(query:QueryResource|null) {
-    if (query) {
-      this.current = cloneHalResource<QueryGroupByResource>(query.groupBy);
-    }
-  }
-}
+export type WorkPackageTableGroupBy = QueryGroupByResource | undefined;

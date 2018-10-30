@@ -20,6 +20,7 @@ import {WorkPackageTableHighlight} from "core-components/wp-fast-table/wp-table-
 import {QueryFormResource} from "core-app/modules/hal/resources/query-form-resource";
 import {WPFocusState} from "core-components/wp-fast-table/state/wp-table-focus.service";
 import {QueryColumn} from "core-components/wp-query/query-column";
+import {QueryFilterInstanceResource} from "core-app/modules/hal/resources/query-filter-instance-resource";
 
 @Injectable()
 export class IsolatedQuerySpace extends StatesGroup {
@@ -43,10 +44,9 @@ export class IsolatedQuerySpace extends StatesGroup {
   // all groups returned as results
   groups = input<GroupObject[]>();
   // Set of columns in strict order of appearance
-columns = input<QueryColumn[]>();
-
+  columns = input<QueryColumn[]>();
   // Set of filters
-  filters = input<WorkPackageTableFilters>();
+  filters = input<QueryFilterInstanceResource[]>();
   // Active and available sort by
   sortBy = input<WorkPackageTableSortBy>();
   // Active and available group by
